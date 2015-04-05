@@ -1,0 +1,183 @@
+<!-- line chart code mostly based on http://bl.ocks.org/mbostock/3883245 -->
+<!-- event/campaign highlight code by Diethard Steiner -->
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.line {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+
+.eventlineborder {
+    stroke-width:1;
+    stroke-dasharray: 5, 3, 9, 2;
+}
+
+.eventlineconnector {
+    stroke-width:1;
+}
+
+.eventtitle {
+    font-family: Verdana;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-anchor: middle;
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v3.js"></script>
+<script>
+
+var data = [
+{"date": "1-May-12",  "close": 582.13},
+{"date": "30-Apr-12",  "close": 583.98},
+{"date": "27-Apr-12",  "close": 603.00},
+{"date": "26-Apr-12",  "close": 607.70},
+{"date": "25-Apr-12",  "close": 610.00},
+{"date": "24-Apr-12",  "close": 560.28},
+{"date": "23-Apr-12",  "close": 571.70},
+{"date": "20-Apr-12",  "close": 572.98},
+{"date": "19-Apr-12",  "close": 587.44}
+];  
+
+var margin = {top: 20, right: 20, bottom: 70, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var parseDate = d3.time.format("%d-%b-%y").parse;
+
+var x = d3.time.scale()
+    .range([0, width]);
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
+var line = d3.svg.line()
+    .x(function(d) { return x(d.date); })
+    .y(function(d) { return y(d.close); });
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+data.forEach(function(d) {
+  d.date = parseDate(d.date);
+  d.close = +d.close;
+});
+
+x.domain(d3.extent(data, function(d) { return d.date; }));
+y.domain(d3.extent(data, function(d) { return d.close; }));
+
+svg.append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis);
+
+svg.append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+  .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 6)
+    .attr("dy", ".71em")
+    .style("text-anchor", "end")
+    .text("Price ($)");
+
+svg.append("path")
+    .datum(data)
+    .attr("class", "line")
+    .attr("d", line);
+
+
+// EVENT
+
+var eventData = [
+{"name": "Summer Event", "startdate": "20-Apr-12",  "enddate": "23-Apr-12", "color": "#289615"},
+{"name": "Refresh Event", "startdate": "22-Apr-12",  "enddate": "24-Apr-12", "color": "#BB70C2"},
+{"name": "Special Event", "startdate": "28-Apr-12",  "enddate": "30-Apr-12", "color": "#D99332"}
+];
+
+// convert to proper JS date format
+eventData.forEach(function(d) {
+  d.startdate = parseDate(d.startdate);
+  d.enddate = parseDate(d.enddate);
+});
+
+
+var eventHeight = function(d, i) { return (i % 2) ? height + 25 : height + 45 };
+
+var eventInd = svg.selectAll(".eventInd")
+  .data(eventData)
+  .enter()
+  .append("g")
+  .attr("class", "eventInd")
+;
+
+eventInd.append("line")
+  .attr("x1", function(d) { return x(d.startdate); })
+  .attr("y1", 0)
+  .attr("x2", function(d) { return x(d.startdate); })
+  .attr("y2", function(d, i) { return eventHeight(d, i); })
+  .attr("stroke", function(d) { return d.color; })
+  .attr("class","eventlineborder")
+;
+
+// draw a line: end event
+eventInd.append("line")
+  .attr("x1", function(d) { return x(d.enddate); })
+  .attr("y1", 0)
+  .attr("x2", function(d) { return x(d.enddate); })
+  .attr("y2", function(d, i) { return eventHeight(d, i); })
+  .attr("stroke", function(d) { return d.color; })
+  .attr("class","eventlineborder")
+;
+
+// draw a line: period connector event
+eventInd.append("line")
+  .attr("x1", function(d) { return x(d.startdate); })
+  .attr("y1", function(d, i) { return eventHeight(d, i); })
+  .attr("x2", function(d) { return x(d.enddate); })
+  .attr("y2", function(d, i) { return eventHeight(d, i); })
+  .attr("stroke", function(d) { return d.color; })
+  .attr("class","eventlineconnector")
+;
+
+// add event label
+eventInd.append("text")
+  .attr("x", function(d) { return x(d.startdate) + ((x(d.enddate) - x(d.startdate))/2); })
+  .attr("y", function(d, i) { return eventHeight(d, i) + 12; })
+  .attr("class", "eventtitle")
+  .attr("stroke", function(d) { return d.color; })
+  .text(function(d) { return d.name; })
+;
+
+</script>
